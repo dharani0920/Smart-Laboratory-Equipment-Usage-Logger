@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Laboratory Equipment Usage Logger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        cardBg: '#131c2e',
+                        cardBorder: '#1e293b',
+                        accentCyan: '#06b6d4',
+                        accentTeal: '#14b8a6',
+                        accentBlue: '#3b82f6',
+                        neonGreen: '#10b981',
+                        neonRed: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for usage graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+        .glow-effect {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+        }
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8)), 
+                        url('https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=1600&auto=format&fit=crop') center/cover;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+    <header class="w-full bg-[#0b0f19]/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <i class="fa-solid fa-flask-vial text-cyan-400"></i> Hello, Lab Administrator
+                </h1>
+                <p class="text-xs text-slate-400">Monitoring Lab 402 - Precision Equipment Tracking (ESP32 Node #04)</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    <i class="fa-solid fa-wifi"></i> 96% Signal
+                </span>
+                <span id="live-clock" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <i class="fa-regular fa-clock"></i> --:--:--
+                </span>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-md">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-6 w-full flex-grow space-y-6">
+        <section class="hero-banner rounded-3xl p-8 md:p-12 border border-slate-700/60 relative overflow-hidden glow-effect">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#0b0f19] via-[#0b0f19]/80 to-transparent z-0"></div>
+            <div class="relative z-10 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 mb-4 backdrop-blur-sm">
+                    <i class="fa-solid fa-microchip animate-spin text-cyan-400"></i> HARDWARE SYSTEM ACTIVE (ESP32 + HX711)
+                </div>
+                <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
+                    Smart Lab <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">Equipment Logger</span>
+                </h2>
+                <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-6">
+                    Automated precision monitoring using load cell weight detection, ultrasonic proximity sensing, and vibration feedback to log accurate lab equipment usage duration and availability.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="triggerCalibration()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-semibold text-sm shadow-lg hover:opacity-90 transition flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i> Calibrate Load Cell
+                    </button>
+                    <button onclick="toggleSimulationMode()" id="sim-toggle-btn" class="px-5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-200 font-medium text-sm hover:bg-slate-700 transition flex items-center gap-2 backdrop-blur-sm">
+                        <i class="fa-solid fa-robot text-cyan-400"></i> <span id="sim-toggle-text">Simulation: Auto</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Card 1: Equipment Status -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col justify-between hover:border-cyan-500/50 transition duration-300">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-cyan-400"></i> Equipment State
+                        </span>
+                        <span id="equip-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            Docked
+                        </span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1" id="equip-status-text">Microscope #03</div>
+                    <p class="text-xs text-slate-400">Ultrasonic Sensor Target</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Proximity Distance:</span>
+                    <span id="ultrasonic-val" class="font-mono font-semibold text-cyan-400">2.4 cm (Present)</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Load Cell Weight -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col justify-between hover:border-cyan-500/50 transition duration-300">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-weight-scale text-teal-400"></i> Load Cell (HX711)
+                        </span>
+                        <span class="text-xs text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20 font-mono">±0.5g</span>
+                    </div>
+                    <div class="flex items-baseline gap-2 mb-1">
+                        <span class="text-3xl font-extrabold text-white font-mono" id="weight-val">1,245.8</span>
+                        <span class="text-slate-400 font-medium">grams</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Base Platform Load Sensor</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Tare Offset:</span>
+                    <span class="font-mono text-slate-300">0.00g (Zeroed)</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Usage Duration Timer -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col justify-between hover:border-cyan-500/50 transition duration-300">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-blue-400"></i> Session Duration
+                        </span>
+                        <span id="session-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-white font-mono mb-1" id="timer-val">00:00:00</div>
+                    <p class="text-xs text-slate-400">Current Active Usage Log</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Today Total:</span>
+                    <span id="today-total" class="font-mono text-cyan-400 font-semibold">4h 12m</span>
+                </div>
+            </div>
+
+            <!-- Card 4: System Health & Vibration -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col justify-between hover:border-cyan-500/50 transition duration-300">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-heart-pulse text-rose-400"></i> Health & Feedback
+                        </span>
+                        <span id="vib-badge" class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-800 text-slate-400">Idle</span>
+                    </div>
+                    <div class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                        <span id="health-score">98.4</span>% <span class="text-xs font-normal text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Optimal</span>
+                    </div>
+                    <p class="text-xs text-slate-400">ESP32 Core Temp: <span class="font-mono text-slate-200" id="esp-temp">42.1°C</span></p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center">
+                    <button onclick="testVibrationMotor()" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-cyan-300 border border-slate-700 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-wave-square"></i> Test Vibration Motor
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Usage Analytics Chart -->
+            <div class="lg:col-span-2 bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col justify-between">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-cyan-400"></i> Weekly Usage Analytics (Hours)
+                        </h3>
+                        <p class="text-xs text-slate-400">Logged active hours per day for Microscope #03</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="inline-flex items-center gap-1 text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20 font-medium">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Active Usage
+                        </span>
+                    </div>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Live Event Activity Logger -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-lg flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-teal-400"></i> Event Logger
+                    </h3>
+                    <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-cyan-400 transition">Clear</button>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Real-time sensor triggers & removal events</p>
+                
+                <div id="log-container" class="space-y-3 overflow-y-auto max-h-60 pr-1 text-xs flex-grow font-mono">
+                    <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-2.5">
+                        <i class="fa-solid fa-circle-info text-cyan-400 mt-0.5"></i>
+                        <div>
+                            <p class="text-slate-200 font-sans font-medium">System Boot Initialized</p>
+                            <span class="text-[10px] text-slate-500">ESP32 firmware v2.4 online</span>
+                        </div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-2.5">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                        <div>
+                            <p class="text-slate-200 font-sans font-medium">Equipment Placed on Station</p>
+                            <span class="text-[10px] text-slate-500">Weight stable at 1,245.8g</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="w-full border-t border-slate-800 py-4 px-6 mt-12 bg-[#0b0f19]">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <p>© 2026 Smart Laboratory Equipment Logger Project (ESP32, HX711, Ultrasonic Sensor)</p>
+            <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1"><i class="fa-solid fa-microchip text-cyan-500"></i> ESP32 Connected</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-database text-teal-500"></i> Local Storage Active</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Toast Box -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-32 opacity-0 transition-all duration-300 bg-slate-900 border border-cyan-500/40 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-cyan-400 text-lg"></i>
+        <div>
+            <h4 id="toast-title" class="text-sm font-bold">Notification</h4>
+            <p id="toast-desc" class="text-xs text-slate-400">Action completed successfully.</p>
+        </div>
+    </div>
+
+    <script>
+        // Clock updater
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerHTML = `<i class="fa-regular fa-clock"></i> ${now.toTimeString().split(' ')[0]}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // State variables
+        let isSimulationActive = true;
+        let isEquipmentPresent = true;
+        let sessionSeconds = 1425; // 23m 45s
+        let totalDailySeconds = 15120; // ~4h 12m
+        let weightValue = 1245.8;
+        let ultrasonicDist = 2.4;
+
+        // Timer interval
+        setInterval(() => {
+            if (isSimulationActive && isEquipmentPresent) {
+                sessionSeconds++;
+                totalDailySeconds++;
+                updateTimerDisplay();
+            }
+        }, 1000);
+
+        function updateTimerDisplay() {
+            const hrs = String(Math.floor(sessionSeconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((sessionSeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(sessionSeconds % 60).padStart(2, '0');
+            document.getElementById('timer-val').innerText = `${hrs}:${mins}:${secs}`;
+
+            const totalHrs = Math.floor(totalDailySeconds / 3600);
+            const totalMins = Math.floor((totalDailySeconds % 3600) / 60);
+            document.getElementById('today-total').innerText = `${totalHrs}h ${totalMins}m`;
+        }
+        updateTimerDisplay();
+
+        // Chart Initialization
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const usageChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Usage Hours',
+                    data: [3.5, 4.2, 5.1, 4.8, 3.9, 1.2, 0.8],
+                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                    borderColor: '#06b6d4',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    hoverBackgroundColor: 'rgba(6, 182, 212, 0.4)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(30, 41, 59, 0.5)' },
+                        ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Simulation Loop & Random fluctuations
+        setInterval(() => {
+            if (!isSimulationActive) return;
+
+            // Slight random drift in weight and temperature
+            if (isEquipmentPresent) {
+                weightValue = 1245.0 + (Math.random() * 1.6 - 0.8);
+                ultrasonicDist = 2.4 + (Math.random() * 0.2 - 0.1);
+                document.getElementById('weight-val').innerText = weightValue.toFixed(1);
+                document.getElementById('ultrasonic-val').innerText = `${ultrasonicDist.toFixed(1)} cm (Present)`;
+            }
+
+            // Random temperature fluctuation
+            const temp = 41.5 + (Math.random() * 1.5);
+            document.getElementById('esp-temp').innerText = `${temp.toFixed(1)}°C`;
+
+        }, 3000);
+
+        // Simulation Toggle
+        function toggleSimulationMode() {
+            isSimulationActive = !isSimulationActive;
+            const btnText = document.getElementById('sim-toggle-text');
+            if (isSimulationActive) {
+                btnText.innerText = "Simulation: Auto";
+                showToast("Simulation Resumed", "ESP32 live sensor simulator active.", "fa-robot", "text-cyan-400");
+            } else {
+                btnText.innerText = "Simulation: Paused";
+                showToast("Simulation Paused", "Manual mode enabled.", "fa-pause", "text-amber-400");
+            }
+        }
+
+        // Calibrate button action
+        function triggerCalibration() {
+            showToast("Load Cell Calibrating...", "Zeroing HX711 sensor offset. Please keep station clear.", "fa-sliders", "text-cyan-400");
+            setTimeout(() => {
+                weightValue = 0.0;
+                document.getElementById('weight-val').innerText = "0.0";
+                isEquipmentPresent = false;
+                updateEquipmentStateUI();
+                addLogEntry("Load Cell Calibrated", "HX711 tared successfully to 0.0g", "fa-sliders", "text-teal-400");
+                showToast("Calibration Complete", "Load cell successfully tared.", "fa-circle-check", "text-emerald-400");
+            }, 2000);
+        }
+
+        // Test Vibration Motor
+        function testVibrationMotor() {
+            const vibBadge = document.getElementById('vib-badge');
+            vibBadge.innerText = "ACTIVE";
+            vibBadge.className = "px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse";
+            
+            showToast("Vibration Test", "ESP32 PWM signal sent to vibration motor.", "fa-wave-square", "text-cyan-400");
+            addLogEntry("Vibration Motor Tested", "Manual pulse test executed successfully", "fa-wave-square", "text-cyan-400");
+
+            setTimeout(() => {
+                vibBadge.innerText = "Idle";
+                vibBadge.className = "px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-800 text-slate-400";
+            }, 3000);
+        }
+
+        function updateEquipmentStateUI() {
+            const badge = document.getElementById('equip-badge');
+            const statusText = document.getElementById('equip-status-text');
+            const sessionDot = document.getElementById('session-dot');
+
+            if (isEquipmentPresent) {
+                badge.innerText = "Docked";
+                badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                statusText.innerText = "Microscope #03";
+                sessionDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+            } else {
+                badge.innerText = "Removed";
+                badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                statusText.innerText = "Station Empty";
+                sessionDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+            }
+        }
+
+        function addLogEntry(title, desc, iconClass, iconColor) {
+            const container = document.getElementById('log-container');
+            const now = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = "p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-2.5 animate-fadeIn";
+            div.innerHTML = `
+                <i class="fa-solid ${iconClass} ${iconColor} mt-0.5"></i>
+                <div class="flex-grow">
+                    <p class="text-slate-200 font-sans font-medium">${title}</p>
+                    <span class="text-[10px] text-slate-500">${now} • ${desc}</span>
+                </div>
+            `;
+            container.prepend(div);
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
+            showToast("Logs Cleared", "Event log history has been reset.", "fa-trash", "text-slate-400");
+        }
+
+        function showToast(title, desc, icon, iconColor) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            const iconEl = document.getElementById('toast-icon');
+            iconEl.className = `fa-solid ${icon} ${iconColor} text-lg`;
+
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-32', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
