@@ -36,11 +36,11 @@
             font-family: 'Inter', sans-serif;
         }
         .glow-effect {
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
         }
         .hero-banner {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8)), 
-                        url('https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=1600&auto=format&fit=crop') center/cover;
+            background: linear-gradient(135deg, rgba(11, 15, 25, 0.88), rgba(15, 23, 42, 0.75)), 
+                        url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1600&auto=format&fit=crop') center/cover;
         }
     </style>
 </head>
@@ -72,14 +72,14 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-6 w-full flex-grow space-y-6">
-        <section class="hero-banner rounded-3xl p-8 md:p-12 border border-slate-700/60 relative overflow-hidden glow-effect">
-            <div class="absolute inset-0 bg-gradient-to-r from-[#0b0f19] via-[#0b0f19]/80 to-transparent z-0"></div>
+        <section class="hero-banner rounded-3xl p-8 md:p-12 border border-cyan-500/30 relative overflow-hidden glow-effect">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#0b0f19] via-[#0b0f19]/85 to-transparent z-0"></div>
             <div class="relative z-10 max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 mb-4 backdrop-blur-sm">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 mb-4 backdrop-blur-sm">
                     <i class="fa-solid fa-microchip animate-spin text-cyan-400"></i> HARDWARE SYSTEM ACTIVE (ESP32 + HX711)
                 </div>
                 <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
-                    Smart Lab <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">Equipment Logger</span>
+                    Smart Lab <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400">Equipment Logger</span>
                 </h2>
                 <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-6">
                     Automated precision monitoring using load cell weight detection, ultrasonic proximity sensing, and vibration feedback to log accurate lab equipment usage duration and availability.
@@ -299,11 +299,11 @@
                 datasets: [{
                     label: 'Usage Hours',
                     data: [3.5, 4.2, 5.1, 4.8, 3.9, 1.2, 0.8],
-                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                    backgroundColor: 'rgba(6, 182, 212, 0.25)',
                     borderColor: '#06b6d4',
                     borderWidth: 2,
                     borderRadius: 8,
-                    hoverBackgroundColor: 'rgba(6, 182, 212, 0.4)'
+                    hoverBackgroundColor: 'rgba(6, 182, 212, 0.5)'
                 }]
             },
             options: {
@@ -329,7 +329,6 @@
         setInterval(() => {
             if (!isSimulationActive) return;
 
-            // Slight random drift in weight and temperature
             if (isEquipmentPresent) {
                 weightValue = 1245.0 + (Math.random() * 1.6 - 0.8);
                 ultrasonicDist = 2.4 + (Math.random() * 0.2 - 0.1);
@@ -337,7 +336,6 @@
                 document.getElementById('ultrasonic-val').innerText = `${ultrasonicDist.toFixed(1)} cm (Present)`;
             }
 
-            // Random temperature fluctuation
             const temp = 41.5 + (Math.random() * 1.5);
             document.getElementById('esp-temp').innerText = `${temp.toFixed(1)}°C`;
 
